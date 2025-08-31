@@ -10,20 +10,18 @@ model_name = "facebook/m2m100_418M"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name, device_map="auto")
 
-
 class Props(BaseModel):
     text: str
     src_lang: str
     tgt_lang: str
 
 class EmailDraftRequest(BaseModel):
-    text: str
+    note: str
+    tone:str
+    recipient: str
 
 class SummaryRequest(BaseModel):
     text: str
-
-
-
 
 app = FastAPI()
 
@@ -35,8 +33,6 @@ DEEPSEEK_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 def read_root():
     return {"message": "🚀 FastAPI is working!"}
 
-
-
 @app.post("/email-draft")
 def emaildrafter(text: EmailDraftRequest):
 
@@ -47,7 +43,7 @@ def emaildrafter(text: EmailDraftRequest):
     }
 
     json_prompt = f"""
-   you are a helpful assistant who drafts professional emails out of the given text  . the text is {text}
+   you are a helpful assistant who drafts emails in {text.tone} tone , which are being recieved by {text.recipient} out of the given note  . the note is {text.note}
     """
 
     payload = {
@@ -67,11 +63,9 @@ def emaildrafter(text: EmailDraftRequest):
     else:
         return {"error": f"API error {response.status_code}", "raw": response.text}
 
-
 MODEL_ID = "sshleifer/distilbart-cnn-12-6"
 API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
 HEADERS = {"Authorization": f"Bearer {HF_API_KEY}"}
-
 
 @app.post("/summarize")
 def summarize(text: SummaryRequest):
@@ -85,7 +79,6 @@ def summarize(text: SummaryRequest):
             return {"error": f"Failed to parse JSON: {str(e)}", "raw": content}
     else:
         return {"error": f"API error {response.status_code}", "raw": response.text}
-
 
 @app.post("/translate")
 def translate(props: Props):
